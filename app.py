@@ -73,23 +73,21 @@ def _clean_products(products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     When duplicates exist, keeps the one with the most complete information.
 
     Rules:
-    - Drop rows that have no name, no price and no image at all.
+    - REQUIRED: Drop rows that don't have an image_url (strict requirement).
     - Group products by normalized name (or product_href if name is missing).
     - For each group, keep only the product with the highest completeness score.
     """
-    # First pass: filter out completely empty products
+    # First pass: filter out products WITHOUT image_url (strict requirement)
     valid_products: List[Dict[str, Any]] = []
     for raw in products:
         if not isinstance(raw, dict):
             continue
 
         p = dict(raw)
-        name = (p.get("name") or "").strip()
-        price = (p.get("price") or "").strip()
         image = (p.get("image_url") or p.get("image") or "").strip()
 
-        # Keep only rows that have at least one of these fields
-        if not (name or price or image):
+        # STRICT: Only keep products that have an image_url
+        if not image:
             continue
 
         valid_products.append(p)
