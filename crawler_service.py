@@ -158,13 +158,20 @@ async def _discover_links(crawler: AsyncWebCrawler, home_url: str, max_pages: in
     return urls[:max_pages]
 
 
-async def crawl_site_async(home_url: str, max_pages: int = 30) -> List[Dict[str, Any]]:
+async def crawl_site_async(
+    home_url: str, 
+    max_pages: int = 30,
+    progress_callback=None
+) -> List[Dict[str, Any]]:
     """
     Multi-URL crawl using Crawl4AI with JSON CSS extraction (no LLM).
 
     - Discovers up to `max_pages` internal URLs from the homepage.
     - Uses MemoryAdaptiveDispatcher + RateLimiter for efficient crawling.
     - Extracts products with JsonCssExtractionStrategy.
+    
+    Args:
+        progress_callback: Optional callback(current, total, status) called during crawl.
     """
     schema = build_product_schema()
     extraction_strategy = JsonCssExtractionStrategy(schema, verbose=False)
@@ -191,10 +198,17 @@ async def crawl_site_async(home_url: str, max_pages: int = 30) -> List[Dict[str,
     products: List[Dict[str, Any]] = []
 
     async with AsyncWebCrawler(verbose=False) as crawler:
+        if progress_callback:
+            progress_callback(0, max_pages, "discovering")
+        
         urls = await _discover_links(crawler, home_url, max_pages=max_pages)
 
         if not urls:
             return []
+
+        total_urls = len(urls)
+        if progress_callback:
+            progress_callback(0, total_urls, "crawling")
 
         # Multi-URL crawl using arun_many + dispatcher
         results = await crawler.arun_many(
@@ -203,7 +217,12 @@ async def crawl_site_async(home_url: str, max_pages: int = 30) -> List[Dict[str,
             dispatcher=dispatcher,
         )
 
+        processed = 0
         for result in results:
+            processed += 1
+            if progress_callback:
+                progress_callback(processed, total_urls, "crawling")
+            
             if not result.success or not result.extracted_content:
                 continue
 
@@ -223,6 +242,9 @@ async def crawl_site_async(home_url: str, max_pages: int = 30) -> List[Dict[str,
                 item.setdefault("source_page", result.url)
                 products.append(item)
 
+        if progress_callback:
+            progress_callback(total_urls, total_urls, "extracting")
+
     return products
 
 
@@ -231,4 +253,15 @@ def crawl_site(home_url: str, max_pages: int = 30) -> List[Dict[str, Any]]:
     Synchronous wrapper for Flask or other WSGI frameworks.
     """
     return asyncio.run(crawl_site_async(home_url, max_pages=max_pages))
+
+
+def crawl_site_with_progress(
+    home_url: str, 
+    max_pages: int = 30,
+    progress_callback=None
+) -> List[Dict[str, Any]]:
+    """
+    Synchronous wrapper with progress callback support.
+    """
+    return asyncio.run(crawl_site_async(home_url, max_pages=max_pages, progress_callback=progress_callback))
 
