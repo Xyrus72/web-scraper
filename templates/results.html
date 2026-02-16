@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Crawl Results</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #020617;
+        color: #e5e7eb;
+      }
+      header {
+        padding: 16px 24px;
+        background: linear-gradient(135deg, #0f172a, #020617);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      a {
+        color: #38bdf8;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      main {
+        padding: 20px 24px 40px;
+        max-width: 1120px;
+        margin: 0 auto;
+      }
+      .summary {
+        margin-bottom: 16px;
+        font-size: 0.95rem;
+        color: #9ca3af;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 18px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-decoration: none;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, #22c55e, #0ea5e9);
+        color: #0b1120;
+      }
+      .btn-outline {
+        background: transparent;
+        border: 1px solid rgba(148, 163, 184, 0.6);
+        color: #e5e7eb;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 6px;
+        font-size: 0.85rem;
+      }
+      th, td {
+        border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+        padding: 6px 8px;
+        vertical-align: top;
+      }
+      th {
+        text-align: left;
+        background: rgba(15, 23, 42, 0.9);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      tbody tr:nth-child(even) {
+        background: rgba(15, 23, 42, 0.7);
+      }
+      .image-thumb img {
+        max-width: 72px;
+        max-height: 72px;
+        border-radius: 6px;
+        border: 1px solid rgba(148, 163, 184, 0.3);
+      }
+      .json-hint {
+        margin-top: 8px;
+        font-size: 0.8rem;
+        color: #6b7280;
+      }
+      code {
+        background: rgba(15, 23, 42, 0.9);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 999px;
+        border: 1px solid rgba(52, 211, 153, 0.6);
+        font-size: 0.75rem;
+        color: #6ee7b7;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>
+        <strong>Crawl4AI Product Crawler</strong>
+        <div style="font-size: 0.78rem; color: #9ca3af;">
+          Crawl ID: <code>{{ crawl_id }}</code>
+        </div>
+      </div>
+      <div>
+        <a href="{{ url_for('index') }}" class="btn btn-outline">New crawl</a>
+      </div>
+    </header>
+
+    <main>
+      <div class="summary">
+        <span class="pill">{{ total }} products extracted</span>
+        &nbsp;from up to 30 internal pages using JSON CSS extraction (no LLM).
+      </div>
+
+      <div class="actions">
+        <a href="{{ url_for('download_csv', crawl_id=crawl_id) }}" class="btn btn-primary">
+          Download CSV
+        </a>
+        <a href="{{ url_for('api_results', crawl_id=crawl_id) }}" class="btn btn-outline" target="_blank">
+          Open JSON API response
+        </a>
+      </div>
+
+      <div class="json-hint">
+        JSON API endpoint:
+        <code>{{ url_for('api_results', crawl_id=crawl_id, _external=True) }}</code>
+      </div>
+
+      {% if products %}
+      <div style="margin-top: 16px; overflow-x: auto; max-height: 70vh;">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Price</th>
+              <th>Image</th>
+              <th>Source Page</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in products %}
+            <tr>
+              <td>{{ p.get("name", "") }}</td>
+              <td>{{ p.get("price", "") }}</td>
+              <td class="image-thumb">
+                {% if p.get("image_url") %}
+                  <img src="{{ p.get('image_url') }}" alt="">
+                {% endif %}
+              </td>
+              <td>
+                {% if p.get("source_page") %}
+                  <a href="{{ p.get('source_page') }}" target="_blank">Open</a>
+                {% endif %}
+              </td>
+              <td>{{ p.get("description", "") | truncate(180, True, '…') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p>No products were detected. You may need to adjust the schema in <code>build_product_schema()</code> to match the site's HTML structure.</p>
+      {% endif %}
+    </main>
+  </body>
+  </html>
+

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Crawl4AI Multi-URL Product Crawler</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body {
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #0f172a;
+        color: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+      }
+      .card {
+        background: radial-gradient(circle at top, #1f2937 0, #020617 60%);
+        border-radius: 16px;
+        padding: 32px 28px;
+        width: 100%;
+        max-width: 560px;
+        box-shadow: 0 24px 80px rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(148, 163, 184, 0.25);
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.6rem;
+        letter-spacing: 0.02em;
+      }
+      p.subtitle {
+        margin: 0 0 20px;
+        color: #9ca3af;
+        font-size: 0.95rem;
+      }
+      label {
+        display: block;
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+        color: #e5e7eb;
+      }
+      input[type="url"],
+      input[type="number"] {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(148, 163, 184, 0.6);
+        background: rgba(15, 23, 42, 0.8);
+        color: #f9fafb;
+        font-size: 0.95rem;
+        outline: none;
+        box-sizing: border-box;
+      }
+      input[type="url"]:focus,
+      input[type="number"]:focus {
+        border-color: #38bdf8;
+        box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+      }
+      .field {
+        margin-bottom: 16px;
+      }
+      button {
+        width: 100%;
+        margin-top: 8px;
+        padding: 11px 14px;
+        border-radius: 999px;
+        border: none;
+        background: linear-gradient(135deg, #22c55e, #0ea5e9);
+        color: #0b1120;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        box-shadow: 0 14px 35px rgba(34, 197, 94, 0.55);
+      }
+      button:hover {
+        filter: brightness(1.05);
+      }
+      .hint {
+        font-size: 0.8rem;
+        color: #9ca3af;
+        margin-top: 4px;
+      }
+      .footer {
+        margin-top: 18px;
+        font-size: 0.8rem;
+        color: #6b7280;
+      }
+      .footer code {
+        background: rgba(15, 23, 42, 0.9);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Crawl4AI Product Crawler</h1>
+      <p class="subtitle">
+        Enter an e‑commerce homepage. The app will discover up to 30 internal pages,
+        extract products (name, price, image, description) using JSON CSS selectors (no LLM),
+        and let you download a CSV.
+      </p>
+
+      <form action="{{ url_for('start_crawl') }}" method="post">
+        <div class="field">
+          <label for="homepage_url">Homepage URL</label>
+          <input
+            id="homepage_url"
+            name="homepage_url"
+            type="url"
+            required
+            placeholder="https://example-shop.com/"
+          >
+          <div class="hint">Must be a public page you have permission to crawl.</div>
+        </div>
+
+        <div class="field">
+          <label for="max_pages">Max pages to crawl</label>
+          <input
+            id="max_pages"
+            name="max_pages"
+            type="number"
+            min="1"
+            max="100"
+            value="30"
+          >
+        </div>
+
+        <button type="submit">Start Crawl</button>
+      </form>
+
+      <div class="footer">
+        Uses <code>crawl4ai</code> with <code>JsonCssExtractionStrategy</code> and multi‑URL crawling
+        (no LLM, schema‑based extraction).
+      </div>
+    </main>
+  </body>
+  </html>
+
