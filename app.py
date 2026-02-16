@@ -23,6 +23,32 @@ app = Flask(__name__)
 CRAWL_RESULTS: Dict[str, List[Dict[str, Any]]] = {}
 
 
+def _clean_products(products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Remove empty / useless rows before exposing as CSV/JSON.
+
+    Rules:
+    - Drop rows that have no name, no price and no image at all.
+    """
+    cleaned: List[Dict[str, Any]] = []
+    for raw in products:
+        if not isinstance(raw, dict):
+            continue
+
+        p = dict(raw)
+        name = (p.get("name") or "").strip()
+        price = (p.get("price") or "").strip()
+        image = (p.get("image_url") or p.get("image") or "").strip()
+
+        # Keep only rows that have at least one of these fields
+        if not (name or price or image):
+            continue
+
+        cleaned.append(p)
+
+    return cleaned
+
+
 @app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
@@ -41,6 +67,7 @@ def start_crawl():
     max_pages = int(request.form.get("max_pages", "30") or "30")
 
     products = crawl_site(homepage, max_pages=max_pages)
+    products = _clean_products(products)
 
     crawl_id = str(uuid.uuid4())
     CRAWL_RESULTS[crawl_id] = products
@@ -53,7 +80,7 @@ def start_crawl():
 
 @app.route("/results/<crawl_id>", methods=["GET"])
 def view_results(crawl_id: str):
-    products = CRAWL_RESULTS.get(crawl_id, [])
+    products = _clean_products(CRAWL_RESULTS.get(crawl_id, []))
     return render_template(
         "results.html",
         crawl_id=crawl_id,
@@ -67,7 +94,7 @@ def api_results(crawl_id: str):
     """
     JSON API: returns all extracted product data for a given crawl.
     """
-    products = CRAWL_RESULTS.get(crawl_id, [])
+    products = _clean_products(CRAWL_RESULTS.get(crawl_id, []))
     return jsonify(
         {
             "crawl_id": crawl_id,
@@ -83,7 +110,7 @@ def download_csv(crawl_id: str):
     Streams a CSV file of extracted product data.
     Browsers will typically cache the download per usual HTTP semantics.
     """
-    products = CRAWL_RESULTS.get(crawl_id, [])
+    products = _clean_products(CRAWL_RESULTS.get(crawl_id, []))
     if not products:
         return jsonify({"error": "No data for this crawl id"}), 404
 
@@ -106,6 +133,27 @@ def download_csv(crawl_id: str):
     resp.headers[
         "Content-Disposition"
     ] = f'attachment; filename="products_{crawl_id}.csv"'
+    return resp
+
+
+@app.route("/download_json/<crawl_id>", methods=["GET"])
+def download_json(crawl_id: str):
+    """
+    Download cleaned product data as a JSON file.
+    """
+    products = _clean_products(CRAWL_RESULTS.get(crawl_id, []))
+    if not products:
+        return jsonify({"error": "No data for this crawl id"}), 404
+
+    import json
+
+    json_bytes = json.dumps(products, ensure_ascii=False, indent=2).encode("utf-8")
+
+    resp = make_response(json_bytes)
+    resp.headers["Content-Type"] = "application/json; charset=utf-8"
+    resp.headers[
+        "Content-Disposition"
+    ] = f'attachment; filename="products_{crawl_id}.json"'
     return resp
 
 
